@@ -209,3 +209,18 @@ Three candidate resolutions, listed without recommendation:
 ## 8. Verification notes
 
 Every line number and signature in this document was read directly from the cloned source at commit `394f869`, not recalled. The SDK `request` signature was read from `jellyfin-sdk-kotlin` sources rather than inferred from usage.
+
+### Build verification
+
+`./gradlew :app:assembleDebug` succeeded on the unmodified clone.
+
+| | |
+|---|---|
+| Result | `BUILD SUCCESSFUL in 3m 47s`, 156 tasks executed |
+| Output | `app/build/outputs/apk/debug/jellyfin-androidtv-v0.0.0-dev.1-debug.apk`, 51 MB |
+| Toolchain | JDK 21.0.3, Gradle 9.6.1, Android SDK at `%LOCALAPPDATA%\Android\Sdk` |
+| Clone state | `git status` clean afterwards. Build output is covered by the client's own `.gitignore`. |
+
+This matters beyond ticking the milestone box: Milestones 8 to 10 require producing a modified client build, so a working toolchain is a hard prerequisite. It is now confirmed rather than assumed.
+
+Warnings observed are pre-existing upstream, not caused by anything here: deprecated `Response<T>` callback utility used by the remaining Java code, `ListAdapter` parameter naming mismatches, and Gradle features incompatible with Gradle 10. Worth knowing that the upstream baseline is not warning-free, since `Claude.md` Step 6 requires fixing warnings and that rule must apply to warnings this project introduces, not to inherited ones.
