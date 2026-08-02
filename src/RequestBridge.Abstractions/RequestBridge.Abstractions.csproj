@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>RequestBridge.Abstractions</AssemblyName>
+    <RootNamespace>RequestBridge.Abstractions</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Every public member must be documented. CS1591 is an error, not a warning. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <!--
+    This project intentionally has no PackageReference and no ProjectReference.
+
+    It must not reference Jellyfin, Seerr, HTTP, or ASP.NET. If a dependency is
+    ever added here, the abstraction has leaked and the correct fix is to remove
+    the dependency, not to justify it. See docs/components.md section 6.
+  -->
+
+</Project>

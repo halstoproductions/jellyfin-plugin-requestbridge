@@ -90,11 +90,20 @@ Design notes:
 | `ExternalIdSource` | enum `Tmdb, Tvdb, Imdb` | No magic strings anywhere |
 | `MediaType` | enum `Movie, Series` | |
 | `RequestState` | enum, the six states | See [state-machine.md](state-machine.md) |
-| `RequestItem` | record with `ExternalIds`, `MediaType`, `Title`, `Year`, `Overview`, `ImageUrl`, `State`, `JellyfinItemId?` | Immutable |
+| `RequestItem` | record with `ExternalIds`, `MediaType`, `Title`, `State`, and optional `Year`, `Overview`, `ImageUrl` | Immutable. Carries **no** library id, see below. |
 | `RequestResult` | `record(bool Accepted, RequestItem Item)` | |
-| `ProviderCapabilities` | see [capabilities.md](capabilities.md) | Immutable |
+| `ProviderHealth` | enum `NotConfigured, Healthy, Degraded, Unreachable` | Health is data, not call failure |
+| `ProviderCapabilities` | see [capabilities.md](capabilities.md), minus `apiVersion` | Immutable |
 | `ProviderException` | carries `ProviderErrorCode` | The only exception type crossing the seam |
 | `ProviderErrorCode` | enum matching [api.md](api.md) section 2 | Mapped to HTTP by the controller, never by the provider |
+
+Two members named in earlier drafts of this document do **not** exist in the abstraction, and their absence is deliberate.
+
+**`RequestItem` has no `JellyfinItemId`.** Putting a Jellyfin identifier in the abstraction would have violated the project's own dependency rule at the level of naming, even though it compiles fine: a library that must not know Jellyfin exists should not name it in a property. A provider has no knowledge of the host library in any case, and cannot populate such a field. Correlating an item with a library entry is the controller's job. `jellyfinItemId` remains on the **wire** model in [api.md](api.md), which is correct, because that contract is explicitly a Jellyfin plugin API.
+
+**`ProviderCapabilities` has no `apiVersion`.** The version of the HTTP contract is a property of the HTTP contract, not of a provider. A provider does not know or care which wire version is in front of it. The controller supplies `apiVersion` when it builds the capability response.
+
+Both are cases where the wire model is a superset of the domain model, which is exactly the independence the split exists to buy.
 
 Immutability throughout, per the coding standards. A provider must not be able to hand back an object the controller can mutate.
 
