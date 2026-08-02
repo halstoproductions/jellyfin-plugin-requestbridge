@@ -49,6 +49,16 @@ External repositories cloned for research live in a sibling `_external/` directo
 
 ---
 
+## Target server version
+
+RequestBridge targets **Jellyfin stable 10.11.11**, target framework **`net9.0`**.
+
+Master is 12.0.0 on `net10.0` and is deliberately not targeted, because a `net10.0` plugin will not load on any server a real user runs. To be re-verified at Milestone 15.
+
+The plugin-relevant server interfaces were diffed between the stable tag and master and are identical, with one exception: `PluginManifest.ImageResourceName` exists only on master and must not be used. Evidence is recorded in `docs/research/server.md`, section 7.
+
+---
+
 ## Provider target
 
 The first provider targets Seerr, the merged Overseerr and Jellyseerr codebase at `seerr-team/seerr`. Seerr supports Jellyfin, Plex, and Emby, so a Seerr provider must not assume Jellyfin on the far side.

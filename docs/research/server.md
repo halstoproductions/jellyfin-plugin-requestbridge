@@ -112,7 +112,9 @@ There is no request-management policy. RequestBridge endpoints intended for ordi
 
 ### The manifest
 
-`PluginManifest` fields: `Category`, `Changelog`, `Description`, `Id`, `Name`, `Overview`, `Owner`, `TargetAbi`, `Timestamp`, `Version`, `Status`, `AutoUpdate`, `ImagePath`, `ImageResourceName`, `Assemblies`.
+`PluginManifest` fields on the target version 10.11.11: `Category`, `Changelog`, `Description`, `Id`, `Name`, `Overview`, `Owner`, `TargetAbi`, `Timestamp`, `Version`, `Status`, `AutoUpdate`, `ImagePath`, `Assemblies`.
+
+Master adds one further field, `ImageResourceName`, for bundled plugins that ship their image as an embedded resource. It does not exist on 10.11.11 and must not be used.
 
 `TargetAbi` is the minimum server version. Enforcement, `PluginManager.cs` line 693:
 
@@ -187,39 +189,53 @@ This keeps the client's knowledge limited to "a Request Provider exists and adve
 
 ---
 
-## 7. Decision required before Milestone 6: which server version to target
+## 7. Target server version: DECIDED
 
-This is the one genuine blocker surfaced by this milestone, and it is a product decision rather than a technical one.
+**RequestBridge targets Jellyfin stable, 10.11.11, `net9.0`.**
 
-| | Latest stable | master |
+| | Target: latest stable | Not used: master |
 |---|---|---|
-| Version | **10.11.11**, released 2026-06-06 | **12.0.0**, unreleased |
-| Target framework | **net9.0** | **net10.0** |
+| Version | **10.11.11**, released 2026-06-06 | 12.0.0, unreleased |
+| Target framework | **net9.0** | net10.0 |
 | Who runs it | essentially every real user | contributors and nightly builds |
 
-The cloned repository is master, so every line number and interface in this document reflects 12.0.0. The interfaces studied here are long-lived and unlikely to have changed shape between 10.11 and master, but that is an assumption I have not verified line by line and should not be treated as verified.
+Rationale: a plugin built against `net10.0` will not load on any server a real user runs. `TargetAbi` marks it unsupported, which is a clean failure rather than a crash, but it is still a plugin nobody can install. The first proof of architecture, Milestones 6 to 10, is worth far more if it runs on a server that exists. The situation is to be re-verified at Milestone 15, when upstream preparation begins against whatever is current then.
 
-The consequences are real. A plugin built against net10.0 will not load on a 10.11.x server. `TargetAbi` will mark it unsupported, which is a clean failure rather than a crash, but it is still a plugin nobody can run.
+The local toolchain is .NET SDK 10.0.201, which can target `net9.0` given the reference pack.
 
-The local toolchain is .NET SDK 10.0.201, which can target either framework given the appropriate reference pack.
+### Cross-version verification
 
-Three options:
+This document was written from master. Because the target is now stable, the plugin-relevant surface was diffed between `v10.11.11` and master rather than assumed. Result:
 
-1. **Target stable 10.11 / net9.0.** The plugin is installable by real users during development, which makes Milestones 7 and 10 testable against a server people actually run. Risk: master drifts, and Milestone 15's upstream conversation happens against a moving target.
-2. **Target master 12.0 / net10.0.** Matches the code studied here and the eventual upstream destination. Risk: nothing is testable on a normal installation, and 12.0 has no release date.
-3. **Target stable now, re-verify at Milestone 15.** Build against 10.11 / net9.0, and re-run this research against whatever is current when upstream preparation begins.
+| File | Stable vs master |
+|---|---|
+| `MediaBrowser.Common/Plugins/IPlugin.cs` | identical |
+| `MediaBrowser.Common/Plugins/BasePluginOfT.cs` | identical |
+| `MediaBrowser.Controller/Plugins/IPluginServiceRegistrator.cs` | identical |
+| `MediaBrowser.Model/Plugins/IHasWebPages.cs` | identical |
+| `MediaBrowser.Common/Api/Policies.cs` | identical |
+| `Jellyfin.Api/BaseJellyfinApiController.cs` | identical |
+| `MediaBrowser.Common/Plugins/PluginManifest.cs` | differs: master adds `ImageResourceName` |
 
-My recommendation is option 3. The first proof of architecture (Milestones 6 to 10) is worth far more if it runs on a server that exists, and the interfaces involved are stable enough that a later re-target is a configuration change rather than a redesign. But this decision is yours, and it should be recorded in `docs/architecture.md` at Milestone 4 rather than assumed.
+Behaviour checked individually on the stable tag, all unchanged:
+
+- `PluginsController` still carries `[Authorize(Policy = Policies.RequiresElevation)]` at class level, so the admin-only discovery constraint in section 5 holds on the target version.
+- `ApplicationParts.Clear()`, `AddApplicationPart(pluginAssembly)` per plugin, and `AddControllersAsServices()` are all present, so controller routing works identically.
+- `instance?.RegisterServices(serviceCollection, _appHost)` is present, so the `IPluginServiceRegistrator` seam is available.
+- `new LocalPlugin(dir, _appVersion >= targetAbi, manifest)` is present, so `TargetAbi` degradation behaves as described.
+- `MediaBrowser.Common.csproj` on the tag confirms `<TargetFramework>net9.0</TargetFramework>`.
+
+Everything in this document therefore applies to the target version, with the single `ImageResourceName` exception noted in section 2. Line numbers cited are from master and may be off by a few lines on the tag; the content at those locations was verified to match.
 
 ---
 
 ## 8. Open questions for later milestones
 
-1. Which server version to target. See section 7. **Blocks Milestone 6.**
-2. Can a plugin publish messages on the server WebSocket, or is client polling the only option? Affects Milestone 12's choice between push and poll.
-3. Is there an existing plugin catalog listing requirement (repository JSON, signing) that shapes the build output? Affects Milestone 15.
-4. Does the client-facing capability endpoint need to work before a user is fully authenticated? Affects where the Android client triggers discovery.
-5. Do 10.11 and master differ in any of the interfaces used here? Should be re-verified if option 1 or 3 is chosen.
+1. ~~Which server version to target.~~ **Resolved.** Stable 10.11.11 / `net9.0`. See section 7.
+2. ~~Do 10.11 and master differ in any of the interfaces used here?~~ **Resolved.** Diffed; identical apart from `ImageResourceName`. See section 7.
+3. Can a plugin publish messages on the server WebSocket, or is client polling the only option? Affects Milestone 12's choice between push and poll.
+4. Is there an existing plugin catalog listing requirement (repository JSON, signing) that shapes the build output? Affects Milestone 15.
+5. Does the client-facing capability endpoint need to work before a user is fully authenticated? Affects where the Android client triggers discovery.
 
 ---
 
