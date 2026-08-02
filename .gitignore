@@ -1,0 +1,60 @@
+# External research checkouts. Read-only reference material, never committed here.
+_external/
+
+# .NET build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+artifacts/
+*.dll
+*.pdb
+*.nupkg
+*.snupkg
+
+# .NET tooling and IDE state
+.vs/
+*.user
+*.suo
+*.userprefs
+*.sln.docstates
+project.lock.json
+project.fragment.lock.json
+
+# Test and coverage output
+[Tt]est[Rr]esult*/
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+coverage*.info
+
+# Gradle and Android build output
+.gradle/
+build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.aar
+*.ap_
+*.dex
+*.jks
+*.keystore
+
+# Editors
+.idea/
+*.iml
+*.swp
+*~
+
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini
