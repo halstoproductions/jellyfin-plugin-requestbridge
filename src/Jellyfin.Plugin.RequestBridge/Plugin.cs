@@ -45,9 +45,11 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     {
         Instance = this;
 
-        logger.LogInformation(
-            "RequestBridge {Version} loaded. No request provider is configured yet.",
-            Version);
+        // Says nothing about providers on purpose. Provider registration happens
+        // before this constructor runs, in PluginServiceRegistrator, and this
+        // type has no view of it. A log line that guesses at another component's
+        // state is a line that eventually lies.
+        logger.LogInformation("RequestBridge {Version} loaded.", Version);
     }
 
     /// <summary>

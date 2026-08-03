@@ -67,6 +67,12 @@ public class RequestBridgeController : ControllerBase
     /// <returns>The current health of the plugin.</returns>
     /// <response code="200">RequestBridge is installed.</response>
     /// <response code="401">The caller is not authenticated.</response>
+    /// <remarks>
+    /// <c>providerConfigured</c> is derived from the provider's own reported
+    /// health rather than hardcoded. A constant would stay true after a future
+    /// change made it false, which is the kind of health check that reports
+    /// success right up until someone needs it.
+    /// </remarks>
     [HttpGet("Health")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -74,7 +80,7 @@ public class RequestBridgeController : ControllerBase
         new HealthDto(
             ApiVersion: ContractVersion,
             PluginVersion: Plugin.Instance?.Version?.ToString() ?? "unknown",
-            ProviderConfigured: true);
+            ProviderConfigured: _provider.Capabilities.Health != ProviderHealth.NotConfigured);
 
     /// <summary>
     /// Confirms that routing and authentication reach this plugin.
