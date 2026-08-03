@@ -1,0 +1,15 @@
+{
+  "category": "General",
+  "changelog": "Milestone 6: plugin skeleton. Loads, configuration page, logging, health and ping endpoints. No request provider yet.",
+  "description": "Exposes a provider-agnostic media request API for Jellyfin clients.",
+  "guid": "4f9294b3-3204-418f-8fee-82b700573a9b",
+  "name": "RequestBridge",
+  "overview": "A generic Request Provider framework. Clients learn that a request provider exists and what it can do, never which product is behind it.",
+  "owner": "halsto",
+  "targetAbi": "10.11.0.0",
+  "timestamp": "2026-08-03T00:00:00.0000000Z",
+  "version": "0.1.0.0",
+  "status": "Active",
+  "autoUpdate": false,
+  "assemblies": []
+}

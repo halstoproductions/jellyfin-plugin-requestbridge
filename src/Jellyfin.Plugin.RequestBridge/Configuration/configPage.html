@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>RequestBridge</title>
+</head>
+<body>
+<div id="RequestBridgeConfigPage"
+     data-role="page"
+     class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-checkbox">
+    <div data-role="content">
+        <div class="content-primary">
+
+            <form id="RequestBridgeConfigForm">
+                <div class="verticalSection">
+                    <div class="sectionTitleContainer flex align-items-center">
+                        <h2 class="sectionTitle">RequestBridge</h2>
+                    </div>
+                    <p class="fieldDescription">
+                        RequestBridge exposes a provider-agnostic request API to Jellyfin clients.
+                        No request provider is wired up yet, so these settings are stored but not
+                        used.
+                    </p>
+                </div>
+
+                <div class="inputContainer">
+                    <input is="emby-input" type="url" id="ProviderBaseUrl" label="Provider base URL" />
+                    <div class="fieldDescription">
+                        Base URL of the request provider, for example http://localhost:5055.
+                    </div>
+                </div>
+
+                <div class="inputContainer">
+                    <input is="emby-input" type="password" id="ProviderApiKey" label="Provider API key" />
+                    <div class="fieldDescription">
+                        Stored in the plugin configuration file on the server.
+                    </div>
+                </div>
+
+                <div>
+                    <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                        <span>Save</span>
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        (function () {
+            var pluginId = '4f9294b3-3204-418f-8fee-82b700573a9b';
+
+            document.querySelector('#RequestBridgeConfigPage')
+                .addEventListener('pageshow', function () {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        document.querySelector('#ProviderBaseUrl').value = config.ProviderBaseUrl || '';
+                        document.querySelector('#ProviderApiKey').value = config.ProviderApiKey || '';
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+            document.querySelector('#RequestBridgeConfigForm')
+                .addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.ProviderBaseUrl = document.querySelector('#ProviderBaseUrl').value;
+                        config.ProviderApiKey = document.querySelector('#ProviderApiKey').value;
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                            Dashboard.processPluginConfigurationUpdateResult(result);
+                        });
+                    });
+                    return false;
+                });
+        })();
+    </script>
+</div>
+</body>
+</html>
