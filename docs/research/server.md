@@ -191,7 +191,9 @@ This keeps the client's knowledge limited to "a Request Provider exists and adve
 
 ## 7. Target server version: DECIDED
 
-**RequestBridge targets Jellyfin stable, 10.11.11, `net9.0`.**
+**RequestBridge targets the Jellyfin stable 10.11 line, `net9.0`, with `targetAbi` declared as `10.11.0.0`.**
+
+The reference source is tag `v10.11.11`. The development server is **10.11.10**, which is why `targetAbi` must be a minor-version floor rather than a specific patch: the server test is `_appVersion >= targetAbi`, so declaring `10.11.11` would refuse to load on 10.11.10. See `docs/architecture.md` section 3.
 
 | | Target: latest stable | Not used: master |
 |---|---|---|

@@ -41,9 +41,26 @@ Rules, in force for the life of the project:
 
 | | Decision |
 |---|---|
-| Jellyfin server | **10.11.11**, target framework **`net9.0`** |
+| Jellyfin server | the **10.11 line**, target framework **`net9.0`** |
+| `targetAbi` in the manifest | **`10.11.0.0`**, not a specific patch. See below. |
+| Reference source | tag `v10.11.11` |
+| Development server | 10.11.10, native Windows install |
 | Not targeted | master, 12.0.0 on `net10.0`, because such a plugin loads on no server a real user runs |
 | First provider | Seerr, `seerr-team/seerr`, verified against 3.4.1 |
+
+### Why `targetAbi` is a minor-version floor
+
+`targetAbi` is a **minimum**, and the server's check is:
+
+```csharp
+return new LocalPlugin(dir, _appVersion >= targetAbi, manifest);
+```
+
+A plugin declaring `10.11.11` would be marked unsupported on a 10.11.10 server, because `10.11.10 >= 10.11.11` is false. It would refuse to load on the development server, and on every user still a patch behind.
+
+Declaring `10.11.0.0` means the plugin loads on any 10.11.x. This matches what shipped plugins do: the Chapter Creator plugin installed on the development server declares exactly `"targetAbi": "10.11.0.0"`.
+
+The rule: pin `targetAbi` to the oldest minor version whose API the plugin actually uses, never to the newest patch that happens to be current.
 
 The plugin-relevant server interfaces were diffed between the stable tag and master and are identical, with one exception: `PluginManifest.ImageResourceName` exists only on master and must not be used. Evidence in [research/server.md](research/server.md) section 7.
 
