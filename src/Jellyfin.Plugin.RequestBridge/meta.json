@@ -1,6 +1,6 @@
 {
   "category": "General",
-  "changelog": "Milestone 6: plugin skeleton. Loads, configuration page, logging, health and ping endpoints. No request provider yet.",
+  "changelog": "Milestone 7: fake request provider registered through IPluginServiceRegistrator. Capabilities, item status, and request submission endpoints.",
   "description": "Exposes a provider-agnostic media request API for Jellyfin clients.",
   "guid": "4f9294b3-3204-418f-8fee-82b700573a9b",
   "name": "RequestBridge",
@@ -8,7 +8,7 @@
   "owner": "halsto",
   "targetAbi": "10.11.0.0",
   "timestamp": "2026-08-03T00:00:00.0000000Z",
-  "version": "0.1.0.0",
+  "version": "0.2.0.0",
   "status": "Active",
   "autoUpdate": false,
   "assemblies": []

@@ -66,6 +66,22 @@ $assemblies = @(
     'RequestBridge.Abstractions.dll'
 )
 
+# Remove older versions of this plugin only, so it is unambiguous which build is
+# loaded. Best effort: a running server holds its plugin assemblies open, so the
+# currently loaded version cannot be deleted until the server stops. That is not
+# a failure worth aborting a deploy over, because Jellyfin supersedes older
+# versions and loads the newest anyway.
+Get-ChildItem $PluginsPath -Directory -Filter 'RequestBridge_*' |
+    Where-Object { $_.FullName -ne $target } |
+    ForEach-Object {
+        try {
+            Remove-Item $_.FullName -Recurse -Force -ErrorAction Stop
+            Write-Host "Removed previous version $($_.Name)"
+        } catch {
+            Write-Warning "Could not remove $($_.Name): it is loaded by the running server. It will be superseded, and can be removed after the next restart."
+        }
+    }
+
 if (-not (Test-Path $target)) {
     New-Item -ItemType Directory -Path $target | Out-Null
 }
