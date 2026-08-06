@@ -74,4 +74,4 @@ A server without this plugin behaves exactly as it did before. Clients treat a 4
 
 ## Licence
 
-Intended for contribution to the Jellyfin ecosystem. Licence to be confirmed before release.
+GPL-2.0, matching the Jellyfin projects this is built for. See [LICENSE](LICENSE).
