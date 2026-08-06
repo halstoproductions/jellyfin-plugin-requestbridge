@@ -1,6 +1,6 @@
 {
   "category": "General",
-  "changelog": "Library correlation: items the server already holds report Available instead of Requestable.",
+  "changelog": "Fake provider keeps a stable title per item, so requesting a search result no longer renames it.",
   "description": "Exposes a provider-agnostic media request API for Jellyfin clients.",
   "guid": "4f9294b3-3204-418f-8fee-82b700573a9b",
   "name": "RequestBridge",
@@ -8,7 +8,7 @@
   "owner": "halsto",
   "targetAbi": "10.11.0.0",
   "timestamp": "2026-08-03T00:00:00.0000000Z",
-  "version": "0.4.0.0",
+  "version": "0.4.1.0",
   "status": "Active",
   "autoUpdate": false,
   "assemblies": []

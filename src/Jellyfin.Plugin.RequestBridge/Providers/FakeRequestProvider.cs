@@ -30,6 +30,18 @@ public sealed class FakeRequestProvider : IRequestProvider
     private const int FakeSearchResultCount = 3;
 
     private readonly ConcurrentDictionary<(ExternalIdSource Source, string Value, MediaType Type), byte> _requested = new();
+
+    /// <summary>
+    /// Titles seen during a search, so the same item keeps its name afterwards.
+    /// </summary>
+    /// <remarks>
+    /// Without this the provider names an item from whatever the caller happened
+    /// to ask for, so requesting a search result renamed it. A test double that
+    /// contradicts itself about identity is worse than no test double, because it
+    /// makes real integration bugs indistinguishable from its own noise.
+    /// </remarks>
+    private readonly ConcurrentDictionary<(ExternalIdSource Source, string Value, MediaType Type), string> _titles = new();
+
     private readonly ILogger<FakeRequestProvider> _logger;
 
     /// <summary>
@@ -140,11 +152,17 @@ public sealed class FakeRequestProvider : IRequestProvider
 
     private RequestItem Describe(ExternalId id, MediaType mediaType, string title)
     {
-        var state = _requested.ContainsKey((id.Source, id.Value, mediaType))
+        var key = (id.Source, id.Value, mediaType);
+
+        var state = _requested.ContainsKey(key)
             ? RequestState.Requested
             : RequestState.Requestable;
 
-        return new RequestItem([id], mediaType, title, state)
+        // A title already seen for this id wins. The caller's suggestion is only
+        // used the first time, so an item keeps the name it was found under.
+        var stableTitle = _titles.GetOrAdd(key, title);
+
+        return new RequestItem([id], mediaType, stableTitle, state)
         {
             Overview = "Placeholder item from the fake request provider. Nothing will be fulfilled.",
         };
