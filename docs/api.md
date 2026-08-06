@@ -13,10 +13,25 @@ This is a **client-facing** contract. It is language-neutral and must remain rea
 | Base path | `/RequestBridge` |
 | Authentication | Jellyfin's standard scheme. All endpoints require an authenticated user. |
 | Authorization | `[Authorize]` only. **Never** `RequiresElevation`, or ordinary users could not use the feature. |
-| Serialisation | Server default. Both camelCase and PascalCase are negotiated by Jellyfin. |
+| Serialisation | **PascalCase by default.** camelCase available by requesting `application/json; profile="CamelCase"`. |
 | Versioning | No version in the path. The client negotiates through `GET /RequestBridge/Capabilities`. See [capabilities.md](capabilities.md). |
 
-Route naming follows Jellyfin's controller convention, so a `RequestBridgeController` deriving from `BaseJellyfinApiController` is served at `/RequestBridge` with no registration code.
+Route naming follows Jellyfin's controller convention, so a `RequestBridgeController` with an explicit `[Route("RequestBridge")]` is served at `/RequestBridge` with no registration code.
+
+Two corrections against earlier drafts of this document, both found by testing the running plugin rather than by reading:
+
+**The controller derives from `ControllerBase`, not `BaseJellyfinApiController`.** `BaseJellyfinApiController` lives in the `Jellyfin.Api` assembly, which is not published to NuGet, so a plugin cannot derive from it. What it supplies must be declared explicitly instead.
+
+**PascalCase is what a client actually receives.** The JSON property names below are written in camelCase for readability, but the wire format is PascalCase unless the caller asks for the camelCase profile. The Jellyfin Kotlin SDK sends `Accept: application/json, application/octet-stream;q=0.9, */*;q=0.8`, which resolves to PascalCase, so the Android client will see `State`, not `state`. Serving both requires declaring all three media types on the controller:
+
+```csharp
+[Produces(
+    MediaTypeNames.Application.Json,
+    JsonDefaults.CamelCaseMediaType,
+    JsonDefaults.PascalCaseMediaType)]
+```
+
+Declaring only `application/json` silently disables the camelCase profile, which is how this was originally shipped and how it was caught.
 
 ---
 

@@ -1,4 +1,5 @@
 using System.Net.Mime;
+using Jellyfin.Extensions.Json;
 using Jellyfin.Plugin.RequestBridge.Api.Dto;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -32,7 +33,10 @@ namespace Jellyfin.Plugin.RequestBridge.Api;
 [ApiController]
 [Authorize]
 [Route("RequestBridge")]
-[Produces(MediaTypeNames.Application.Json)]
+[Produces(
+    MediaTypeNames.Application.Json,
+    JsonDefaults.CamelCaseMediaType,
+    JsonDefaults.PascalCaseMediaType)]
 public class RequestBridgeController : ControllerBase
 {
     /// <summary>
