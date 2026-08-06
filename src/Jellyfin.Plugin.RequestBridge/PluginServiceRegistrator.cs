@@ -1,5 +1,5 @@
 using Jellyfin.Plugin.RequestBridge.Library;
-using Jellyfin.Plugin.RequestBridge.Providers;
+using Jellyfin.Plugin.RequestBridge.Providers.Seerr;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,8 +33,9 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     /// <inheritdoc />
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
-        // Milestone 11 changes exactly this line to the Seerr provider.
-        serviceCollection.AddSingleton<IRequestProvider, FakeRequestProvider>();
+        // The provider swap. Milestone 7 registered FakeRequestProvider here and
+        // nothing else changed when this line did.
+        serviceCollection.AddSingleton<IRequestProvider, SeerrRequestProvider>();
 
         // Host-side concern, not a provider concern: whether this server already
         // holds an item is a question no provider can answer.
