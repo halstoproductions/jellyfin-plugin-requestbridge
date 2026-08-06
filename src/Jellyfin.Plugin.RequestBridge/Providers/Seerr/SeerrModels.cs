@@ -125,6 +125,14 @@ internal sealed class SeerrCreateRequest
     [JsonPropertyName("mediaId")]
     public int MediaId { get; set; }
 
+    /// <summary>
+    /// Gets or sets the seasons to request, for series only.
+    /// </summary>
+    /// <remarks>
+    /// Omitted entirely when null rather than serialised as an explicit null.
+    /// Seerr expects this key to be absent or an array, and rejects a null.
+    /// </remarks>
     [JsonPropertyName("seasons")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<int>? Seasons { get; set; }
 }

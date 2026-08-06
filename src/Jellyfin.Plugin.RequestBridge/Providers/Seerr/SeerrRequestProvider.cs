@@ -181,6 +181,7 @@ public sealed class SeerrRequestProvider : IRequestProvider
             // either way, and a duplicate press must not surface as an error.
             if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.Conflict)
             {
+                await LogFailureAsync(response, "request creation", cancellationToken).ConfigureAwait(false);
                 throw ToProviderException(response.StatusCode);
             }
         }
@@ -243,6 +244,45 @@ public sealed class SeerrRequestProvider : IRequestProvider
             ProviderErrorCode.ProviderRejected, "The request provider refused the operation."),
     };
 
+    /// <summary>
+    /// Records what the provider actually said when it refused.
+    /// </summary>
+    /// <remarks>
+    /// The exception deliberately carries only a neutral code and message, so
+    /// that provider wording never reaches a caller. That leaves the log as the
+    /// only place an administrator can find out what went wrong, which makes
+    /// discarding the status code and body here a diagnostics dead end.
+    /// </remarks>
+    private async Task LogFailureAsync(
+        HttpResponseMessage response,
+        string operation,
+        CancellationToken cancellationToken)
+    {
+        string body;
+        try
+        {
+            body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        }
+#pragma warning disable CA1031 // Do not catch general exception types
+        catch (Exception ex)
+#pragma warning restore CA1031
+        {
+            body = $"<unreadable: {ex.GetType().Name}>";
+        }
+
+        const int MaxLoggedBodyLength = 500;
+        if (body.Length > MaxLoggedBodyLength)
+        {
+            body = body[..MaxLoggedBodyLength];
+        }
+
+        _logger.LogWarning(
+            "Request provider refused {Operation} with {StatusCode}. Response: {Body}",
+            operation,
+            (int)response.StatusCode,
+            body);
+    }
+
     private ProviderHealth CurrentHealth() =>
         IsConfigured(out _, out _) ? _observedHealth : ProviderHealth.NotConfigured;
 
@@ -294,6 +334,7 @@ public sealed class SeerrRequestProvider : IRequestProvider
                     ? ProviderHealth.Degraded
                     : ProviderHealth.Healthy;
 
+                await LogFailureAsync(response, path, cancellationToken).ConfigureAwait(false);
                 throw ToProviderException(response.StatusCode);
             }
 
