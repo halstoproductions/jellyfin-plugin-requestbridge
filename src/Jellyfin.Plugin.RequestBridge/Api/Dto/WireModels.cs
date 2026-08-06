@@ -43,6 +43,19 @@ public sealed record RequestItemDto(
     string? JellyfinItemId);
 
 /// <summary>
+/// Wire model for a set of search results.
+/// </summary>
+/// <param name="Items">
+/// Matching items. Empty when nothing matched, which is a valid result rather
+/// than a failure.
+/// </param>
+/// <remarks>
+/// Wrapped in an object rather than returned as a bare array so that paging or
+/// result metadata can be added later without breaking existing clients.
+/// </remarks>
+public sealed record SearchResultDto(IReadOnlyList<RequestItemDto> Items);
+
+/// <summary>
 /// Wire model describing what the configured provider can do.
 /// </summary>
 /// <param name="ApiVersion">Version of the RequestBridge HTTP contract.</param>

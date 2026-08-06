@@ -49,6 +49,9 @@ public class RequestBridgeController : ControllerBase
     /// </remarks>
     public const int ContractVersion = 1;
 
+    private const int DefaultSearchLimit = 20;
+    private const int MaximumSearchLimit = 50;
+
     private readonly IRequestProvider _provider;
     private readonly ILogger<RequestBridgeController> _logger;
 
@@ -115,6 +118,69 @@ public class RequestBridgeController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public ActionResult<CapabilitiesDto> GetCapabilities() =>
         ApiMapping.ToDto(_provider.Capabilities, ContractVersion);
+
+    /// <summary>
+    /// Finds items, including items this server's library does not have.
+    /// </summary>
+    /// <param name="query">Free text to search for.</param>
+    /// <param name="mediaType">
+    /// <c>Movie</c> or <c>Series</c>. Omit for both.
+    /// </param>
+    /// <param name="limit">Maximum results. Clamped to a sane range.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <returns>Matching items, each carrying its state.</returns>
+    /// <response code="200">The search completed. An empty list is a valid result.</response>
+    /// <response code="400">The media type was not recognised, or searching is unsupported.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <remarks>
+    /// This is the discovery surface for requestable media. An item absent from
+    /// the library has no Jellyfin identity at all, so it cannot be found through
+    /// the ordinary item search, which is why this endpoint exists.
+    /// </remarks>
+    [HttpGet("Search")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<SearchResultDto>> Search(
+        [FromQuery] string query,
+        [FromQuery] string? mediaType,
+        [FromQuery] int? limit,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return Problem(ProviderErrorCode.InvalidRequest, "A search query is required.");
+        }
+
+        if (!_provider.Capabilities.CanSearch)
+        {
+            return Problem(ProviderErrorCode.NotSupported, "This provider does not support searching.");
+        }
+
+        MediaType? parsedMediaType = null;
+        if (!string.IsNullOrWhiteSpace(mediaType))
+        {
+            if (!ApiMapping.TryParseMediaType(mediaType, out var parsed))
+            {
+                return Problem(ProviderErrorCode.InvalidRequest, $"Unknown media type: {mediaType}.");
+            }
+
+            parsedMediaType = parsed;
+        }
+
+        try
+        {
+            var items = await _provider
+                .SearchAsync(query, parsedMediaType, ClampLimit(limit), cancellationToken)
+                .ConfigureAwait(false);
+
+            return new SearchResultDto([.. items.Select(item => ApiMapping.ToDto(item))]);
+        }
+        catch (ProviderException ex)
+        {
+            return Problem(ex);
+        }
+    }
 
     /// <summary>
     /// Reads the current state of a single item.
@@ -253,4 +319,15 @@ public class RequestBridgeController : ControllerBase
         StatusCode(
             ApiMapping.ToStatusCode(code),
             new ProblemDto(code.ToString(), message));
+
+    /// <summary>
+    /// Constrains a caller-supplied result limit.
+    /// </summary>
+    /// <remarks>
+    /// Clamped rather than rejected. An out-of-range limit is a caller being
+    /// careless, not a request that cannot be served, and failing it would give
+    /// a client a way to turn a cosmetic mistake into a broken screen.
+    /// </remarks>
+    private static int ClampLimit(int? requested) =>
+        Math.Clamp(requested ?? DefaultSearchLimit, 1, MaximumSearchLimit);
 }

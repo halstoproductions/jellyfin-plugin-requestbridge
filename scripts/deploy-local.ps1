@@ -10,21 +10,21 @@
     The server must be restarted afterwards. Jellyfin discovers and constructs
     plugins during startup, so a running server will not notice a new folder.
 
-    Restarting a Windows tray install correctly matters. jellyfin.exe started
-    with no arguments does NOT reuse the existing data directory: it creates a
-    fresh one under %LOCALAPPDATA%\jellyfin and comes up as an unconfigured
-    server. Setting the working directory is not sufficient. The data directory
-    must be passed explicitly:
+    Restart through the tray application, not jellyfin.exe:
 
-        $data = (Get-ItemProperty 'HKLM:\SOFTWARE\WOW6432Node\Jellyfin\Server').DataFolder
-        Start-Process 'E:\Programs\Jellyfin\Server\jellyfin.exe' -ArgumentList '--datadir', $data
+        Get-Process jellyfin -ErrorAction SilentlyContinue | Stop-Process -Force
+        Start-Process 'E:\Programs\Jellyfin\Server\jellyfin-windows-tray\Jellyfin.Windows.Tray.exe'
 
-    Symptom of getting this wrong: /System/Info/Public reports a different
-    server Id and StartupWizardCompleted false. The original data is untouched,
-    so the fix is to stop the process and start it again with --datadir.
+    The tray application launches the server with the arguments the installer
+    configured, so the correct data directory is used without having to know
+    what it is.
 
-    Restarting through the tray icon avoids the problem entirely and is the
-    better option when someone might be watching something.
+    Do not start jellyfin.exe directly. With no arguments it does NOT reuse the
+    existing data directory: it creates a fresh one under %LOCALAPPDATA%\jellyfin
+    and comes up as an unconfigured server. Setting the working directory does
+    not help. The symptom is /System/Info/Public reporting a different server Id
+    and StartupWizardCompleted false. The original data is untouched, so the fix
+    is to stop the process and start it through the tray application.
 
 .PARAMETER PluginsPath
     The server's plugins directory.
