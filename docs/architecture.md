@@ -80,6 +80,24 @@ This repository never contains Android client source. The Android TV client is a
 
 External repositories cloned for research live in a sibling `_external/` directory outside this repository. They are read-only reference material.
 
+### Concrete checkout layout
+
+```
+jellyfin plugin/                     container, not version controlled
+    RequestBridge/                   this repository
+    jellyfin-androidtv/              the working client fork
+    _external/
+        jellyfin/                    read-only research clone
+        jellyfin-androidtv/          read-only research clone
+```
+
+The working fork carries `upstream` as its only remote, pointing at
+`jellyfin/jellyfin-androidtv`. Client work happens on branches prefixed
+`requestbridge/`. Milestone 8 is on `requestbridge/capability-discovery`.
+
+The research clones stay untouched so that "what does upstream actually do" can
+always be answered without a fork's changes in the way.
+
 ---
 
 ## 5. Decisions taken at Milestone 4
