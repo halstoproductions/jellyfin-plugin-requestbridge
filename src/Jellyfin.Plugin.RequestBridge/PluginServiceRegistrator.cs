@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.RequestBridge.Library;
 using Jellyfin.Plugin.RequestBridge.Providers;
 using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
@@ -34,5 +35,9 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     {
         // Milestone 11 changes exactly this line to the Seerr provider.
         serviceCollection.AddSingleton<IRequestProvider, FakeRequestProvider>();
+
+        // Host-side concern, not a provider concern: whether this server already
+        // holds an item is a question no provider can answer.
+        serviceCollection.AddSingleton<LibraryPresenceResolver>();
     }
 }

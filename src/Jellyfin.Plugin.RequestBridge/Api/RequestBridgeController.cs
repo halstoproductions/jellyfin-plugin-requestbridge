@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Net.Mime;
 using Jellyfin.Extensions.Json;
 using Jellyfin.Plugin.RequestBridge.Api.Dto;
+using Jellyfin.Plugin.RequestBridge.Library;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -53,18 +55,22 @@ public class RequestBridgeController : ControllerBase
     private const int MaximumSearchLimit = 50;
 
     private readonly IRequestProvider _provider;
+    private readonly LibraryPresenceResolver _libraryPresence;
     private readonly ILogger<RequestBridgeController> _logger;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="RequestBridgeController"/> class.
     /// </summary>
     /// <param name="provider">The configured request provider.</param>
+    /// <param name="libraryPresence">Correlates provider items with the library.</param>
     /// <param name="logger">Logger for this controller.</param>
     public RequestBridgeController(
         IRequestProvider provider,
+        LibraryPresenceResolver libraryPresence,
         ILogger<RequestBridgeController> logger)
     {
         _provider = provider;
+        _libraryPresence = libraryPresence;
         _logger = logger;
     }
 
@@ -174,7 +180,7 @@ public class RequestBridgeController : ControllerBase
                 .SearchAsync(query, parsedMediaType, ClampLimit(limit), cancellationToken)
                 .ConfigureAwait(false);
 
-            return new SearchResultDto([.. items.Select(item => ApiMapping.ToDto(item))]);
+            return new SearchResultDto([.. items.Select(Correlate)]);
         }
         catch (ProviderException ex)
         {
@@ -234,7 +240,7 @@ public class RequestBridgeController : ControllerBase
                 return Problem(ProviderErrorCode.ItemNotFound, "The provider does not know this item.");
             }
 
-            return ApiMapping.ToDto(item);
+            return Correlate(item);
         }
         catch (ProviderException ex)
         {
@@ -298,12 +304,35 @@ public class RequestBridgeController : ControllerBase
             _logger.LogInformation(
                 "RequestBridge accepted a request for {Source}:{Value}.", parsedSource, request.Value);
 
-            return new RequestResultDto(result.Accepted, ApiMapping.ToDto(result.Item));
+            return new RequestResultDto(result.Accepted, Correlate(result.Item));
         }
         catch (ProviderException ex)
         {
             return Problem(ex);
         }
+    }
+
+    /// <summary>
+    /// Overlays library presence onto a provider-supplied item.
+    /// </summary>
+    /// <remarks>
+    /// The library is authoritative. If this server holds the media, the item is
+    /// Available no matter what the provider believes, because the provider has
+    /// no visibility of this library. Without this the user is offered a request
+    /// for something they already own.
+    /// </remarks>
+    private RequestItemDto Correlate(RequestItem item)
+    {
+        var libraryItemId = _libraryPresence.FindLibraryItemId(item);
+
+        if (libraryItemId is null)
+        {
+            return ApiMapping.ToDto(item);
+        }
+
+        return ApiMapping.ToDto(
+            item with { State = RequestState.Available },
+            libraryItemId.Value.ToString("N", CultureInfo.InvariantCulture));
     }
 
     private ObjectResult Problem(ProviderException exception)
