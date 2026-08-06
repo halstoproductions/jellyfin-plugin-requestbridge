@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Jellyfin.Plugin.RequestBridge.Configuration;
 using MediaBrowser.Common.Net;
 using Microsoft.Extensions.Logging;
 using RequestBridge.Abstractions;
@@ -34,6 +35,7 @@ public sealed class SeerrRequestProvider : IRequestProvider
     private static readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web);
 
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IPluginConfigurationSource _configuration;
     private readonly ILogger<SeerrRequestProvider> _logger;
 
     // Last observed reachability. Capabilities must not perform network calls, so
@@ -44,12 +46,15 @@ public sealed class SeerrRequestProvider : IRequestProvider
     /// Initializes a new instance of the <see cref="SeerrRequestProvider"/> class.
     /// </summary>
     /// <param name="httpClientFactory">Factory for the outbound client.</param>
+    /// <param name="configuration">Supplies the current provider settings.</param>
     /// <param name="logger">Logger for this provider.</param>
     public SeerrRequestProvider(
         IHttpClientFactory httpClientFactory,
+        IPluginConfigurationSource configuration,
         ILogger<SeerrRequestProvider> logger)
     {
         _httpClientFactory = httpClientFactory;
+        _configuration = configuration;
         _logger = logger;
     }
 
@@ -286,9 +291,9 @@ public sealed class SeerrRequestProvider : IRequestProvider
     private ProviderHealth CurrentHealth() =>
         IsConfigured(out _, out _) ? _observedHealth : ProviderHealth.NotConfigured;
 
-    private static bool IsConfigured(out string baseUrl, out string apiKey)
+    private bool IsConfigured(out string baseUrl, out string apiKey)
     {
-        var configuration = Plugin.Instance?.Configuration;
+        var configuration = _configuration.Current;
 
         baseUrl = configuration?.ProviderBaseUrl?.Trim() ?? string.Empty;
         apiKey = configuration?.ProviderApiKey?.Trim() ?? string.Empty;

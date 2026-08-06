@@ -1,3 +1,4 @@
+using Jellyfin.Plugin.RequestBridge.Configuration;
 using Jellyfin.Plugin.RequestBridge.Library;
 using Jellyfin.Plugin.RequestBridge.Providers.Seerr;
 using MediaBrowser.Controller;
@@ -33,6 +34,11 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     /// <inheritdoc />
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
+        // Configuration is resolved through an interface so that nothing needing
+        // it has to reach for the plugin singleton, which is null during this
+        // very method and throughout any test.
+        serviceCollection.AddSingleton<IPluginConfigurationSource, PluginConfigurationSource>();
+
         // The provider swap. Milestone 7 registered FakeRequestProvider here and
         // nothing else changed when this line did.
         serviceCollection.AddSingleton<IRequestProvider, SeerrRequestProvider>();

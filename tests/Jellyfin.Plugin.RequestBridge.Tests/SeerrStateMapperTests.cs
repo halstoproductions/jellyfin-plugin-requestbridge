@@ -123,9 +123,9 @@ public class SeerrStateMapperTests
         // Capabilities promise which states a provider can emit. A mapping that
         // produced something outside that list would be a lie no client could
         // detect.
-        var advertised = new SeerrRequestProvider(
-            new StubHttpClientFactory(),
-            new StubLogger<SeerrRequestProvider>()).Capabilities.SupportedStates;
+        var advertised = SeerrTestHarness
+            .Create(_ => SeerrTestHarness.Json("{}"))
+            .Provider.Capabilities.SupportedStates;
 
         int[] everySeerrStatus =
             [SeerrUnknown, SeerrPending, SeerrProcessing, SeerrPartiallyAvailable, SeerrAvailable, SeerrDeleted];

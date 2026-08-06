@@ -28,16 +28,3 @@ internal sealed class StubLogger<T> : ILogger<T>
         // Deliberately empty.
     }
 }
-
-/// <summary>
-/// A client factory that hands out an unconfigured client.
-/// </summary>
-/// <remarks>
-/// Sufficient for tests that never make a call. Anything that would actually
-/// reach the network belongs in an integration test against a real provider,
-/// not here.
-/// </remarks>
-internal sealed class StubHttpClientFactory : IHttpClientFactory
-{
-    public HttpClient CreateClient(string name) => new();
-}
