@@ -61,3 +61,8 @@ desktop.ini
 
 # Test result output
 TestResults/
+
+# Internal working documents. Operating instructions and the private roadmap,
+# deliberately not published.
+Claude.md
+Milestones.md
