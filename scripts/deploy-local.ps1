@@ -14,10 +14,11 @@
     first: the tray refuses to start a second instance of itself, so launching it
     while it is already running is a no-op and leaves the server down.
 
+        $install = (Get-ItemProperty 'HKLM:\SOFTWARE\WOW6432Node\Jellyfin\Server').InstallFolder
         Get-Process -Name 'Jellyfin.Windows.Tray' -ErrorAction SilentlyContinue | Stop-Process -Force
         Get-Process -Name 'jellyfin' -ErrorAction SilentlyContinue | Stop-Process -Force
         Start-Sleep -Seconds 4
-        Start-Process 'E:\Programs\Jellyfin\Server\jellyfin-windows-tray\Jellyfin.Windows.Tray.exe'
+        Start-Process (Join-Path $install 'jellyfin-windows-tray\Jellyfin.Windows.Tray.exe')
 
     The tray application launches the server with the arguments the installer
     configured, so the correct data directory is used without having to know
@@ -31,21 +32,43 @@
     is to stop the process and start it through the tray application.
 
 .PARAMETER PluginsPath
-    The server's plugins directory.
+    The server's plugins directory. Discovered from the Windows installer's
+    registry entry when not supplied.
 
 .PARAMETER Configuration
     Build configuration. Release by default.
 
 .EXAMPLE
     .\scripts\deploy-local.ps1
+
+.EXAMPLE
+    .\scripts\deploy-local.ps1 -PluginsPath 'D:\Jellyfin\plugins'
 #>
 [CmdletBinding()]
 param(
-    [string]$PluginsPath = 'E:\Programs\Jellyfin\Server\plugins',
+    [string]$PluginsPath,
     [string]$Configuration = 'Release'
 )
 
 $ErrorActionPreference = 'Stop'
+
+if (-not $PluginsPath) {
+    # The Windows installer records where it put things. Reading it beats
+    # hardcoding one machine's layout, and beats guessing.
+    $registryKey = 'HKLM:\SOFTWARE\WOW6432Node\Jellyfin\Server'
+
+    $dataFolder = if (Test-Path $registryKey) {
+        (Get-ItemProperty $registryKey).DataFolder
+    } else {
+        $null
+    }
+
+    if (-not $dataFolder) {
+        throw "Could not find a Jellyfin installation. Pass -PluginsPath with the path to your server's plugins directory."
+    }
+
+    $PluginsPath = Join-Path $dataFolder 'plugins'
+}
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $repoRoot 'src\Jellyfin.Plugin.RequestBridge'
@@ -93,7 +116,15 @@ if (-not (Test-Path $target)) {
 foreach ($name in $assemblies) {
     $source = Join-Path $out $name
     if (-not (Test-Path $source)) { throw "Missing build output: $source" }
-    Copy-Item $source -Destination $target -Force
+
+    try {
+        Copy-Item $source -Destination $target -Force -ErrorAction Stop
+    } catch [System.IO.IOException] {
+        # The running server holds its plugin assemblies open, so redeploying the
+        # same version over itself cannot work. Raising the version is the normal
+        # fix, because Jellyfin then loads a new folder and supersedes the old one.
+        throw "Cannot overwrite $name in $target because the running server has it loaded. Raise the version in meta.json, or stop Jellyfin and run this again."
+    }
 }
 
 Copy-Item $meta -Destination $target -Force
