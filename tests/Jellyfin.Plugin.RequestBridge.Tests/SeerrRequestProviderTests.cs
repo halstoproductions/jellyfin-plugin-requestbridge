@@ -281,6 +281,33 @@ public class SeerrRequestProviderTests
         Assert.Equal(ProviderHealth.Healthy, provider.Capabilities.Health);
     }
 
+    [Theory]
+    [InlineData("not a url")]
+    [InlineData("localhost:5055")]
+    [InlineData("file:///etc/passwd")]
+    [InlineData("ftp://seerr.test")]
+    public async Task MisconfiguredBaseUrl_IsReportedNotThrown(string baseUrl)
+    {
+        // An administrator typing a bad URL is a configuration mistake, not a
+        // crash. Without validation this escapes as an unhandled UriFormatException
+        // and the caller receives a 500 with a stack trace.
+        var (provider, handler) = Create(_ => Json("{}"), baseUrl: baseUrl);
+
+        var error = await Assert.ThrowsAsync<ProviderException>(() =>
+            provider.SearchAsync("q", null, 10, CancellationToken.None));
+
+        Assert.Equal(ProviderErrorCode.ProviderNotConfigured, error.ErrorCode);
+        Assert.Empty(handler.Calls);
+    }
+
+    [Fact]
+    public void MisconfiguredBaseUrl_ReportsNotConfiguredHealth()
+    {
+        var (provider, _) = Create(_ => Json("{}"), baseUrl: "not a url");
+
+        Assert.Equal(ProviderHealth.NotConfigured, provider.Capabilities.Health);
+    }
+
     [Fact]
     public void Capabilities_AdvertiseSeasonSelection()
     {

@@ -291,14 +291,43 @@ public sealed class SeerrRequestProvider : IRequestProvider
     private ProviderHealth CurrentHealth() =>
         IsConfigured(out _, out _) ? _observedHealth : ProviderHealth.NotConfigured;
 
-    private bool IsConfigured(out string baseUrl, out string apiKey)
+    /// <summary>
+    /// Reads and validates the configured provider settings.
+    /// </summary>
+    /// <remarks>
+    /// The URL is parsed here rather than at the point of use. An administrator
+    /// typing a malformed address is a configuration mistake, and without this
+    /// the resulting UriFormatException escapes every catch in this class and
+    /// reaches the caller as an unhandled server error.
+    /// </remarks>
+    private bool IsConfigured(out Uri baseUrl, out string apiKey)
     {
+        baseUrl = null!;
+
         var configuration = _configuration.Current;
 
-        baseUrl = configuration?.ProviderBaseUrl?.Trim() ?? string.Empty;
+        var configuredUrl = configuration?.ProviderBaseUrl?.Trim() ?? string.Empty;
         apiKey = configuration?.ProviderApiKey?.Trim() ?? string.Empty;
 
-        return baseUrl.Length > 0 && apiKey.Length > 0;
+        if (configuredUrl.Length == 0 || apiKey.Length == 0)
+        {
+            return false;
+        }
+
+        if (!Uri.TryCreate(configuredUrl.TrimEnd('/') + '/', UriKind.Absolute, out var parsed))
+        {
+            return false;
+        }
+
+        // Restricted to HTTP. A provider is reached over the network, and any
+        // other scheme is a typo at best.
+        if (parsed.Scheme != Uri.UriSchemeHttp && parsed.Scheme != Uri.UriSchemeHttps)
+        {
+            return false;
+        }
+
+        baseUrl = parsed;
+        return true;
     }
 
     private HttpClient CreateClient()
@@ -310,7 +339,7 @@ public sealed class SeerrRequestProvider : IRequestProvider
         }
 
         var client = _httpClientFactory.CreateClient(NamedClient.Default);
-        client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + '/');
+        client.BaseAddress = baseUrl;
         client.DefaultRequestHeaders.Add(ApiKeyHeader, apiKey);
 
         return client;
