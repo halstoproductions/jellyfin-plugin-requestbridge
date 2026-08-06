@@ -41,4 +41,14 @@
     <EmbeddedResource Include="Configuration\configPage.html" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      The state mapper and wire mapping are internal because nothing outside this
+      assembly may call them. They are also the pieces most worth testing, so the
+      test assembly is granted access rather than the types being made public to
+      suit a test.
+    -->
+    <InternalsVisibleTo Include="Jellyfin.Plugin.RequestBridge.Tests" />
+  </ItemGroup>
+
 </Project>
