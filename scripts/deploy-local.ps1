@@ -10,9 +10,13 @@
     The server must be restarted afterwards. Jellyfin discovers and constructs
     plugins during startup, so a running server will not notice a new folder.
 
-    Restart through the tray application, not jellyfin.exe:
+    Restart through the tray application, not jellyfin.exe. Stop BOTH processes
+    first: the tray refuses to start a second instance of itself, so launching it
+    while it is already running is a no-op and leaves the server down.
 
-        Get-Process jellyfin -ErrorAction SilentlyContinue | Stop-Process -Force
+        Get-Process -Name 'Jellyfin.Windows.Tray' -ErrorAction SilentlyContinue | Stop-Process -Force
+        Get-Process -Name 'jellyfin' -ErrorAction SilentlyContinue | Stop-Process -Force
+        Start-Sleep -Seconds 4
         Start-Process 'E:\Programs\Jellyfin\Server\jellyfin-windows-tray\Jellyfin.Windows.Tray.exe'
 
     The tray application launches the server with the arguments the installer
